@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import {
   ActivityIndicator,
+  Image,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -184,17 +186,41 @@ function PlanView({ plan }: { plan: TripPlan }) {
 
           {day.stops.map((stop) => (
             <View key={stop.order} style={styles.stop}>
+              {stop.photoUrl ? (
+                <View style={styles.photoBox}>
+                  <Image
+                    source={{ uri: stop.photoUrl }}
+                    style={styles.photo}
+                    resizeMode="cover"
+                    accessibilityLabel={`Photo of ${stop.name}`}
+                  />
+                  {stop.photoCredit ? <Text style={styles.photoCredit}>Photo: {stop.photoCredit}</Text> : null}
+                </View>
+              ) : null}
               <Text style={styles.stopName}>
                 {stop.arriveAt.slice(0, 5)} · {stop.name}
               </Text>
               <Text style={styles.muted}>
-                Open {stop.openingHours} · Entry {stop.entryFee.local === 0 ? 'free' : money(stop.entryFee)}
+                {/^(open|closed)\b/i.test(stop.openingHours) ? stop.openingHours : `Open ${stop.openingHours}`} · Entry{' '}
+                {stop.entryFee.local === 0 ? 'free' : money(stop.entryFee)}
               </Text>
               {stop.limits.map((limit) => (
                 <Text key={limit} style={styles.limit}>
                   ⚠︎ {limit}
                 </Text>
               ))}
+              {stop.latitude !== null ? (
+                <Pressable
+                  onPress={() =>
+                    Linking.openURL(
+                      `https://www.youtube.com/results?search_query=${encodeURIComponent(`${stop.name} ${plan.city}`)}`,
+                    )
+                  }
+                  accessibilityRole="link"
+                >
+                  <Text style={styles.link}>▶ Watch on YouTube</Text>
+                </Pressable>
+              ) : null}
             </View>
           ))}
 
@@ -303,4 +329,8 @@ const styles = StyleSheet.create({
   choiceText: { fontSize: 14, color: '#333' },
   choiceTextSelected: { color: '#fff', fontWeight: '600' },
   choiceDisabled: { opacity: 0.4 },
+  photoBox: { marginBottom: 6 },
+  photo: { width: '100%', aspectRatio: 4 / 3, borderRadius: 10, backgroundColor: '#E4E7EB' },
+  photoCredit: { fontSize: 11, color: '#888', marginTop: 2 },
+  link: { color: '#0B5CAD', fontSize: 13, marginTop: 4, fontWeight: '600' },
 });

@@ -24,6 +24,8 @@ export type Stop = {
   limits: string[];
   latitude: number | null; // from Google Places; null for the sample plan
   longitude: number | null;
+  photoUrl: string | null; // temporary Google image link; null if none
+  photoCredit: string | null; // photographer's name, must be shown with the photo
 };
 
 export type Day = {
