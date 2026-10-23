@@ -64,3 +64,15 @@ export type TripPlan = {
 };
 
 export type ApiError = { error: string; details?: string[] };
+
+export type SavedTripSummary = {
+  id: number;
+  country: string;
+  city: string;
+  startDate: string;
+  endDate: string;
+  days: number;
+  savedAt: string;
+};
+
+export type SavedTripFull = { summary: SavedTripSummary; plan: TripPlan };

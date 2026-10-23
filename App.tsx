@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { Session } from '@supabase/supabase-js';
 import { StatusBar } from 'expo-status-bar';
 import {
   ActivityIndicator,
@@ -13,7 +14,10 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
-import { createPlan } from './src/api';
+import { createPlan, saveTrip } from './src/api';
+import { AccountBar } from './src/components/Account';
+import { SavedTrips } from './src/components/SavedTrips';
+import { supabase } from './src/supabase';
 import type { Money, TransportMode, TravelStyle, TripPlan } from './src/types';
 
 const STYLES: { value: TravelStyle; label: string }[] = [
@@ -41,10 +45,36 @@ export default function App() {
   const [plan, setPlan] = useState<TripPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [showTrips, setShowTrips] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  // Keep track of who is logged in (Supabase remembers the login between app launches)
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      if (!newSession) setShowTrips(false);
+    });
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  async function onSaveTrip() {
+    if (!plan) return;
+    setSaveMessage(null);
+    try {
+      await saveTrip(plan);
+      setSaveMessage('Saved to My trips ✓');
+    } catch (e) {
+      setSaveMessage(e instanceof Error ? e.message : 'Could not save this trip');
+    }
+  }
 
   async function onPlanTrip() {
     setLoading(true);
     setError(null);
+    setSaveMessage(null);
     try {
       setPlan(
         await createPlan({
@@ -73,6 +103,18 @@ export default function App() {
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.title}>TripMate</Text>
           <Text style={styles.subtitle}>Where and when are you going?</Text>
+
+          <AccountBar session={session} onShowTrips={() => setShowTrips(true)} />
+          {showTrips && session ? (
+            <SavedTrips
+              onOpen={(saved) => {
+                setPlan(saved);
+                setSaveMessage(null);
+                setShowTrips(false);
+              }}
+              onClose={() => setShowTrips(false)}
+            />
+          ) : null}
 
           <Field label="Country" value={country} onChangeText={setCountry} />
           <Field label="City" value={city} onChangeText={setCity} />
@@ -120,6 +162,12 @@ export default function App() {
           </Pressable>
 
           {error && <Text style={styles.error}>{error}</Text>}
+          {plan && session ? (
+            <Pressable style={styles.saveButton} onPress={onSaveTrip} accessibilityRole="button">
+              <Text style={styles.saveButtonText}>Save this trip</Text>
+            </Pressable>
+          ) : null}
+          {saveMessage ? <Text style={styles.saveMessage}>{saveMessage}</Text> : null}
           {plan && <PlanView plan={plan} />}
         </ScrollView>
       </SafeAreaView>
@@ -346,6 +394,16 @@ const styles = StyleSheet.create({
   photo: { width: '100%', aspectRatio: 4 / 3, borderRadius: 10, backgroundColor: '#E4E7EB' },
   photoCredit: { fontSize: 11, color: '#888', marginTop: 2 },
   link: { color: '#0B5CAD', fontSize: 13, marginTop: 4, fontWeight: '600' },
+  saveButton: {
+    borderWidth: 1,
+    borderColor: '#0B7A75',
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  saveButtonText: { color: '#0B7A75', fontSize: 16, fontWeight: '600' },
+  saveMessage: { color: '#0B7A75', fontSize: 13, marginBottom: 12 },
   stayLine: { color: '#333', fontSize: 14, marginTop: -6, marginBottom: 12 },
   stayWarning: {
     color: '#9A5B00',
