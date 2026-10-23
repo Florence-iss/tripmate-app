@@ -3,22 +3,29 @@ import { Platform } from 'react-native';
 import { supabase } from './supabase';
 import type { ApiError, PlanRequest, SavedTripFull, SavedTripSummary, TripPlan } from './types';
 
-// Set EXPO_PUBLIC_API_URL in .env to point at another backend (e.g. your Mac's Wi-Fi IP
-// for a real phone, or the AWS address later). The Android emulator reaches the Mac via 10.0.2.2.
+// EXPO_PUBLIC_API_URL picks the backend: your Mac's Wi-Fi IP for local testing (.env.local), or the online
+// address (set for test builds in eas.json). The Android emulator reaches the Mac via 10.0.2.2.
 const API_URL =
   process.env.EXPO_PUBLIC_API_URL ??
   (Platform.OS === 'android' ? 'http://10.0.2.2:8080' : 'http://localhost:8080');
 
+/** Plans a trip. Logged-in users send their login ticket, which lets the backend make a real AI plan. */
 export async function createPlan(request: PlanRequest): Promise<TripPlan> {
+  const session = supabase ? (await supabase.auth.getSession()).data.session : null;
   let response: Response;
   try {
     response = await fetch(`${API_URL}/plan`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      },
       body: JSON.stringify(request),
     });
   } catch {
-    throw new Error(`Can't reach the TripMate server at ${API_URL}. Is the backend running?`);
+    throw new Error(
+      `Can't reach the TripMate server. If it has been idle it may be waking up (up to a minute); please try again.`,
+    );
   }
 
   if (!response.ok) {

@@ -226,6 +226,7 @@ function PlanView({ plan }: { plan: TripPlan }) {
       <Text style={styles.heading}>
         {plan.city}, {plan.country} · {plan.days.length} {plan.days.length === 1 ? 'day' : 'days'}
       </Text>
+      {plan.notice ? <Text style={styles.notice}>{plan.notice}</Text> : null}
       {plan.stay ? (
         plan.stay.found ? (
           <Text style={styles.stayLine}>🏨 Staying at {plan.stay.name} · daily trips to and from it are included</Text>
@@ -404,6 +405,15 @@ const styles = StyleSheet.create({
   },
   saveButtonText: { color: '#0B7A75', fontSize: 16, fontWeight: '600' },
   saveMessage: { color: '#0B7A75', fontSize: 13, marginBottom: 12 },
+  notice: {
+    color: '#0B3B5B',
+    backgroundColor: '#E6F1F8',
+    fontSize: 13,
+    padding: 10,
+    borderRadius: 10,
+    marginTop: -4,
+    marginBottom: 12,
+  },
   stayLine: { color: '#333', fontSize: 14, marginTop: -6, marginBottom: 12 },
   stayWarning: {
     color: '#9A5B00',

@@ -61,6 +61,7 @@ export type TripPlan = {
   mustTryFood: { name: string; description: string }[];
   carRental: { type: string; pricePerDay: Money }[];
   days: Day[];
+  notice: string | null; // e.g. why this is a free sample plan instead of an AI plan
 };
 
 export type ApiError = { error: string; details?: string[] };
