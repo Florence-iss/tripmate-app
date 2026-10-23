@@ -11,6 +11,16 @@ export type PlanRequest = {
   travelers?: number; // 1–12, default 1
   style?: TravelStyle; // default MIDRANGE
   transport?: TransportMode; // default TRANSIT
+  stayAt?: string; // hotel name or area; each day starts and ends there
+};
+
+// Where the traveller stays; found=false means it couldn't be located (hotel trips not counted)
+export type Stay = {
+  requested: string;
+  found: boolean;
+  name: string | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 export type Money = { local: number; sgd: number };
@@ -45,6 +55,7 @@ export type TripPlan = {
   travelers: number;
   style: TravelStyle;
   transport: TransportMode;
+  stay: Stay | null;
   localCurrency: string;
   thingsToBring: string[];
   mustTryFood: { name: string; description: string }[];

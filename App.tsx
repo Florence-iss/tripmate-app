@@ -37,6 +37,7 @@ export default function App() {
   const [travelers, setTravelers] = useState(1);
   const [style, setStyle] = useState<TravelStyle>('MIDRANGE');
   const [transport, setTransport] = useState<TransportMode>('TRANSIT');
+  const [stayAt, setStayAt] = useState('');
   const [plan, setPlan] = useState<TripPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -54,6 +55,7 @@ export default function App() {
           travelers,
           style,
           transport,
+          stayAt: stayAt.trim() || undefined,
         }),
       );
     } catch (e) {
@@ -103,6 +105,8 @@ export default function App() {
               <Text style={styles.stepButtonText}>+</Text>
             </Pressable>
           </View>
+
+          <Field label="Staying at (hotel or area, optional)" value={stayAt} onChangeText={setStayAt} />
 
           <Choice label="Style" options={STYLES} value={style} onChange={setStyle} />
           <Choice label="Getting around" options={TRANSPORTS} value={transport} onChange={setTransport} />
@@ -174,6 +178,15 @@ function PlanView({ plan }: { plan: TripPlan }) {
       <Text style={styles.heading}>
         {plan.city}, {plan.country} · {plan.days.length} {plan.days.length === 1 ? 'day' : 'days'}
       </Text>
+      {plan.stay ? (
+        plan.stay.found ? (
+          <Text style={styles.stayLine}>🏨 Staying at {plan.stay.name} · daily trips to and from it are included</Text>
+        ) : (
+          <Text style={styles.stayWarning}>
+            Couldn't find "{plan.stay.requested}", so trips to and from it aren't counted. Try the full hotel name.
+          </Text>
+        )
+      ) : null}
 
       {plan.days.map((day) => (
         <View key={day.dayNumber} style={styles.card}>
@@ -333,4 +346,14 @@ const styles = StyleSheet.create({
   photo: { width: '100%', aspectRatio: 4 / 3, borderRadius: 10, backgroundColor: '#E4E7EB' },
   photoCredit: { fontSize: 11, color: '#888', marginTop: 2 },
   link: { color: '#0B5CAD', fontSize: 13, marginTop: 4, fontWeight: '600' },
+  stayLine: { color: '#333', fontSize: 14, marginTop: -6, marginBottom: 12 },
+  stayWarning: {
+    color: '#9A5B00',
+    backgroundColor: '#FFF4E0',
+    fontSize: 13,
+    padding: 10,
+    borderRadius: 10,
+    marginTop: -4,
+    marginBottom: 12,
+  },
 });
