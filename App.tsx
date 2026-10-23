@@ -12,13 +12,29 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { createPlan } from './src/api';
-import type { Money, TripPlan } from './src/types';
+import type { Money, TransportMode, TravelStyle, TripPlan } from './src/types';
+
+const STYLES: { value: TravelStyle; label: string }[] = [
+  { value: 'BUDGET', label: 'Budget' },
+  { value: 'MIDRANGE', label: 'Mid-range' },
+  { value: 'COMFORT', label: 'Comfort' },
+];
+
+const TRANSPORTS: { value: TransportMode; label: string }[] = [
+  { value: 'TRANSIT', label: 'Public transport' },
+  { value: 'TAXI', label: 'Taxi' },
+  { value: 'CAR_WITH_DRIVER', label: 'Car + driver' },
+  { value: 'SELF_DRIVE', label: 'Self-drive' },
+];
 
 export default function App() {
   const [country, setCountry] = useState('Japan');
   const [city, setCity] = useState('Kyoto');
   const [startDate, setStartDate] = useState('2026-11-01');
   const [endDate, setEndDate] = useState('2026-11-03');
+  const [travelers, setTravelers] = useState(1);
+  const [style, setStyle] = useState<TravelStyle>('MIDRANGE');
+  const [transport, setTransport] = useState<TransportMode>('TRANSIT');
   const [plan, setPlan] = useState<TripPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -27,7 +43,17 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      setPlan(await createPlan({ country: country.trim(), city: city.trim(), startDate, endDate }));
+      setPlan(
+        await createPlan({
+          country: country.trim(),
+          city: city.trim(),
+          startDate,
+          endDate,
+          travelers,
+          style,
+          transport,
+        }),
+      );
     } catch (e) {
       setPlan(null);
       setError(e instanceof Error ? e.message : 'Something went wrong');
@@ -55,6 +81,30 @@ export default function App() {
             </View>
           </View>
 
+          <Text style={styles.label}>Travellers</Text>
+          <View style={styles.stepper}>
+            <Pressable
+              style={[styles.stepButton, travelers <= 1 && styles.choiceDisabled]}
+              onPress={() => setTravelers((n) => Math.max(1, n - 1))}
+              disabled={travelers <= 1}
+              accessibilityLabel="Fewer travellers"
+            >
+              <Text style={styles.stepButtonText}>−</Text>
+            </Pressable>
+            <Text style={styles.stepValue}>{travelers}</Text>
+            <Pressable
+              style={[styles.stepButton, travelers >= 12 && styles.choiceDisabled]}
+              onPress={() => setTravelers((n) => Math.min(12, n + 1))}
+              disabled={travelers >= 12}
+              accessibilityLabel="More travellers"
+            >
+              <Text style={styles.stepButtonText}>+</Text>
+            </Pressable>
+          </View>
+
+          <Choice label="Style" options={STYLES} value={style} onChange={setStyle} />
+          <Choice label="Getting around" options={TRANSPORTS} value={transport} onChange={setTransport} />
+
           <Pressable
             style={({ pressed }) => [styles.button, (pressed || loading) && styles.buttonPressed]}
             onPress={onPlanTrip}
@@ -81,6 +131,35 @@ function Field(props: { label: string; value: string; onChangeText: (text: strin
         onChangeText={props.onChangeText}
         autoCorrect={false}
       />
+    </View>
+  );
+}
+
+function Choice<T extends string>(props: {
+  label: string;
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <View style={styles.field}>
+      <Text style={styles.label}>{props.label}</Text>
+      <View style={styles.choices}>
+        {props.options.map((option) => {
+          const selected = option.value === props.value;
+          return (
+            <Pressable
+              key={option.value}
+              style={[styles.choice, selected && styles.choiceSelected]}
+              onPress={() => props.onChange(option.value)}
+              accessibilityRole="radio"
+              accessibilityState={{ selected }}
+            >
+              <Text style={[styles.choiceText, selected && styles.choiceTextSelected]}>{option.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -119,11 +198,16 @@ function PlanView({ plan }: { plan: TripPlan }) {
             </View>
           ))}
 
-          <Text style={styles.total}>Day budget: {money(day.budget.total)}</Text>
+          <Text style={styles.total}>
+            Day budget{plan.travelers > 1 ? ` for ${plan.travelers}` : ''}: {money(day.budget.total)}
+          </Text>
           <Text style={styles.muted}>
             Entry {money(day.budget.entry)} · Food {money(day.budget.food)} · Transport{' '}
             {money(day.budget.transport)}
           </Text>
+          {day.budget.transportNote ? (
+            <Text style={styles.muted}>Getting around: {day.budget.transportNote}</Text>
+          ) : null}
         </View>
       ))}
 
@@ -193,4 +277,30 @@ const styles = StyleSheet.create({
   limit: { color: '#9A5B00', fontSize: 13 },
   total: { fontWeight: '700', marginTop: 6 },
   bold: { fontWeight: '600' },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 12 },
+  stepButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#D5D9DE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepButtonText: { fontSize: 22, color: '#0B3B5B' },
+  stepValue: { fontSize: 18, fontWeight: '600', minWidth: 24, textAlign: 'center' },
+  choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  choice: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#D5D9DE',
+    backgroundColor: '#fff',
+  },
+  choiceSelected: { backgroundColor: '#0B7A75', borderColor: '#0B7A75' },
+  choiceText: { fontSize: 14, color: '#333' },
+  choiceTextSelected: { color: '#fff', fontWeight: '600' },
+  choiceDisabled: { opacity: 0.4 },
 });

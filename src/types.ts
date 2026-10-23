@@ -1,10 +1,16 @@
 // Same shape as the backend's TripPlan (tripmate_backend: model/TripPlan.java).
 
+export type TravelStyle = 'BUDGET' | 'MIDRANGE' | 'COMFORT';
+export type TransportMode = 'TRANSIT' | 'TAXI' | 'CAR_WITH_DRIVER' | 'SELF_DRIVE';
+
 export type PlanRequest = {
   country: string;
   city: string;
   startDate: string; // YYYY-MM-DD
   endDate: string; // YYYY-MM-DD
+  travelers?: number; // 1–12, default 1
+  style?: TravelStyle; // default MIDRANGE
+  transport?: TransportMode; // default TRANSIT
 };
 
 export type Money = { local: number; sgd: number };
@@ -16,6 +22,8 @@ export type Stop = {
   openingHours: string;
   entryFee: Money;
   limits: string[];
+  latitude: number | null; // from Google Places; null for the sample plan
+  longitude: number | null;
 };
 
 export type Day = {
@@ -23,7 +31,8 @@ export type Day = {
   date: string;
   weather: { summary: string; minTempC: number; maxTempC: number };
   stops: Stop[];
-  budget: { entry: Money; food: Money; transport: Money; total: Money };
+  // Whole group's cost for the day; transportNote explains it, e.g. "3 taxi rides, about 13 km"
+  budget: { entry: Money; food: Money; transport: Money; total: Money; transportNote: string };
 };
 
 export type TripPlan = {
@@ -31,6 +40,9 @@ export type TripPlan = {
   city: string;
   startDate: string;
   endDate: string;
+  travelers: number;
+  style: TravelStyle;
+  transport: TransportMode;
   localCurrency: string;
   thingsToBring: string[];
   mustTryFood: { name: string; description: string }[];
