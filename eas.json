@@ -1,0 +1,17 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://tripmate-backend-bz0t.onrender.com",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://cidrtmwlptpjmbyfpxkg.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_NwnHn3wKPkwt_STucT3uoA_-vVArZSL"
+      }
+    }
+  }
+}

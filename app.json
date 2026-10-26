@@ -7,7 +7,8 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.florenceiss.tripmate"
     },
     "android": {
       "adaptiveIcon": {
@@ -16,10 +17,20 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.florenceiss.tripmate"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "96e4be20-def8-4066-adfb-5474229fa7ab"
+      }
+    },
+    "owner": "florence-iss",
+    "plugins": [
+      "expo-status-bar"
+    ]
   }
 }
