@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { StatusBar } from 'expo-status-bar';
 import {
   ActivityIndicator,
   Image,
   Linking,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,6 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { createPlan, saveTrip } from './src/api';
@@ -33,11 +36,19 @@ const TRANSPORTS: { value: TransportMode; label: string }[] = [
   { value: 'SELF_DRIVE', label: 'Self-drive' },
 ];
 
-/** The phone's local date n days from today, as YYYY-MM-DD (trips can't start in the past). */
 function daysFromToday(n: number): string {
   const d = new Date();
   d.setDate(d.getDate() + n);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function toYMD(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function parseLocalDate(ymd: string): Date {
+  const [y, m, d] = ymd.split('-').map(Number);
+  return new Date(y, m - 1, d);
 }
 
 export default function App() {
@@ -56,7 +67,9 @@ export default function App() {
   const [showTrips, setShowTrips] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
-  // Keep track of who is logged in (Supabase remembers the login between app launches)
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
+  const resultsY = useRef(0);
+
   useEffect(() => {
     if (!supabase) return;
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -66,6 +79,14 @@ export default function App() {
     });
     return () => data.subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (plan) {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: resultsY.current - 16, animated: true });
+      }, 150);
+    }
+  }, [plan]);
 
   async function onSaveTrip() {
     if (!plan) return;
@@ -107,7 +128,7 @@ export default function App() {
     <SafeAreaProvider>
       <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
         <StatusBar style="dark" />
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.title}>TripMate</Text>
           <Text style={styles.subtitle}>Where and when are you going?</Text>
 
@@ -123,14 +144,24 @@ export default function App() {
             />
           ) : null}
 
-          <Field label="Country" value={country} onChangeText={setCountry} />
           <Field label="City" value={city} onChangeText={setCity} />
+          <Field label="Country" value={country} onChangeText={setCountry} />
           <View style={styles.row}>
             <View style={styles.flex}>
-              <Field label="Start (YYYY-MM-DD)" value={startDate} onChangeText={setStartDate} />
+              <DateField
+                label="Start date"
+                value={startDate}
+                onChange={setStartDate}
+                minimumDate={new Date()}
+              />
             </View>
             <View style={styles.flex}>
-              <Field label="End (YYYY-MM-DD)" value={endDate} onChangeText={setEndDate} />
+              <DateField
+                label="End date"
+                value={endDate}
+                onChange={setEndDate}
+                minimumDate={parseLocalDate(startDate)}
+              />
             </View>
           </View>
 
@@ -155,7 +186,12 @@ export default function App() {
             </Pressable>
           </View>
 
-          <Field label="Staying at (hotel or area, optional)" value={stayAt} onChangeText={setStayAt} />
+          <Field
+            label="Staying at"
+            placeholder="Hotel name or area (optional)"
+            value={stayAt}
+            onChangeText={setStayAt}
+          />
 
           <Choice label="Style" options={STYLES} value={style} onChange={setStyle} />
           <Choice label="Getting around" options={TRANSPORTS} value={transport} onChange={setTransport} />
@@ -168,21 +204,32 @@ export default function App() {
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Plan my trip</Text>}
           </Pressable>
 
-          {error && <Text style={styles.error}>{error}</Text>}
-          {plan && session ? (
-            <Pressable style={styles.saveButton} onPress={onSaveTrip} accessibilityRole="button">
-              <Text style={styles.saveButtonText}>Save this trip</Text>
-            </Pressable>
-          ) : null}
-          {saveMessage ? <Text style={styles.saveMessage}>{saveMessage}</Text> : null}
-          {plan && <PlanView plan={plan} />}
+          <View onLayout={(e) => { resultsY.current = e.nativeEvent.layout.y; }}>
+            {error && <Text style={styles.error}>{error}</Text>}
+
+            {plan && session ? (
+              <Pressable style={styles.saveButton} onPress={onSaveTrip} accessibilityRole="button">
+                <Text style={styles.saveButtonText}>Save this trip</Text>
+              </Pressable>
+            ) : plan && !session ? (
+              <Text style={styles.loginNudge}>Log in to save this trip</Text>
+            ) : null}
+
+            {saveMessage ? <Text style={styles.saveMessage}>{saveMessage}</Text> : null}
+            {plan && <PlanView plan={plan} />}
+          </View>
         </ScrollView>
       </SafeAreaView>
     </SafeAreaProvider>
   );
 }
 
-function Field(props: { label: string; value: string; onChangeText: (text: string) => void }) {
+function Field(props: {
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder?: string;
+}) {
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{props.label}</Text>
@@ -190,8 +237,70 @@ function Field(props: { label: string; value: string; onChangeText: (text: strin
         style={styles.input}
         value={props.value}
         onChangeText={props.onChangeText}
+        placeholder={props.placeholder}
+        placeholderTextColor="#AAA"
         autoCorrect={false}
       />
+    </View>
+  );
+}
+
+function DateField(props: {
+  label: string;
+  value: string;
+  onChange: (ymd: string) => void;
+  minimumDate?: Date;
+}) {
+  const [show, setShow] = useState(false);
+  const date = parseLocalDate(props.value);
+
+  const displayDate = date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+
+  function handleChange(_: unknown, selected?: Date) {
+    if (Platform.OS !== 'ios') setShow(false);
+    if (selected) props.onChange(toYMD(selected));
+  }
+
+  return (
+    <View style={styles.field}>
+      <Text style={styles.label}>{props.label}</Text>
+      <Pressable style={[styles.input, styles.dateInput]} onPress={() => setShow(true)}>
+        <Text style={styles.dateText}>{displayDate}</Text>
+        <Text style={styles.dateChevron}>▾</Text>
+      </Pressable>
+
+      {show && Platform.OS === 'ios' && (
+        <Modal transparent animationType="slide">
+          <View style={styles.pickerOverlay}>
+            <View style={styles.pickerSheet}>
+              <Pressable onPress={() => setShow(false)} style={styles.pickerDone}>
+                <Text style={styles.pickerDoneText}>Done</Text>
+              </Pressable>
+              <DateTimePicker
+                value={date}
+                mode="date"
+                display="spinner"
+                minimumDate={props.minimumDate}
+                onChange={handleChange}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {show && Platform.OS !== 'ios' && (
+        <DateTimePicker
+          value={date}
+          mode="date"
+          display="default"
+          minimumDate={props.minimumDate}
+          onChange={handleChange}
+        />
+      )}
     </View>
   );
 }
@@ -322,14 +431,16 @@ function PlanView({ plan }: { plan: TripPlan }) {
         ))}
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Car rental</Text>
-        {plan.carRental.map((car) => (
-          <Text key={car.type}>
-            • {car.type}: {money(car.pricePerDay)} per day
-          </Text>
-        ))}
-      </View>
+      {plan.transport === 'SELF_DRIVE' && plan.carRental.length > 0 ? (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Car rental</Text>
+          {plan.carRental.map((car) => (
+            <Text key={car.type}>
+              • {car.type}: {money(car.pricePerDay)} per day
+            </Text>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -352,6 +463,29 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 16,
   },
+  dateInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dateText: { fontSize: 16, color: '#000' },
+  dateChevron: { fontSize: 14, color: '#888' },
+  pickerOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  pickerSheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingBottom: 24,
+  },
+  pickerDone: {
+    alignItems: 'flex-end',
+    padding: 16,
+  },
+  pickerDoneText: { fontSize: 17, color: '#0B7A75', fontWeight: '600' },
   button: {
     backgroundColor: '#0B7A75',
     borderRadius: 12,
@@ -412,6 +546,12 @@ const styles = StyleSheet.create({
   },
   saveButtonText: { color: '#0B7A75', fontSize: 16, fontWeight: '600' },
   saveMessage: { color: '#0B7A75', fontSize: 13, marginBottom: 12 },
+  loginNudge: {
+    color: '#555',
+    fontSize: 13,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
   notice: {
     color: '#0B3B5B',
     backgroundColor: '#E6F1F8',
