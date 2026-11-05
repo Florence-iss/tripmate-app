@@ -33,11 +33,18 @@ const TRANSPORTS: { value: TransportMode; label: string }[] = [
   { value: 'SELF_DRIVE', label: 'Self-drive' },
 ];
 
+/** The phone's local date n days from today, as YYYY-MM-DD (trips can't start in the past). */
+function daysFromToday(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 export default function App() {
   const [country, setCountry] = useState('Japan');
   const [city, setCity] = useState('Kyoto');
-  const [startDate, setStartDate] = useState('2026-11-01');
-  const [endDate, setEndDate] = useState('2026-11-03');
+  const [startDate, setStartDate] = useState(() => daysFromToday(7));
+  const [endDate, setEndDate] = useState(() => daysFromToday(9));
   const [travelers, setTravelers] = useState(1);
   const [style, setStyle] = useState<TravelStyle>('MIDRANGE');
   const [transport, setTransport] = useState<TransportMode>('TRANSIT');
