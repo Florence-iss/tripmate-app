@@ -1,28 +1,88 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
 
+import { deleteAccount } from '../api';
 import { supabase } from '../supabase';
 
-/** Top bar: "Log in" when signed out (opens the form), or the user's email + My trips + Log out. */
+const DELETE_WARNING = 'This deletes your login and all your saved trips. It can’t be undone.';
+
+/** Asks before deleting. Native apps get a system dialog; the browser gets its own confirm box. */
+function confirmDelete(onConfirm: () => void) {
+  if (Platform.OS === 'web') {
+    if (globalThis.confirm?.(`Delete your account?\n\n${DELETE_WARNING}`)) onConfirm();
+    return;
+  }
+  Alert.alert('Delete your account?', DELETE_WARNING, [
+    { text: 'Cancel', style: 'cancel' },
+    { text: 'Delete account', style: 'destructive', onPress: onConfirm },
+  ]);
+}
+
+function tell(title: string, message?: string) {
+  if (Platform.OS === 'web') {
+    globalThis.alert?.(message ? `${title}\n\n${message}` : title);
+  } else {
+    Alert.alert(title, message);
+  }
+}
+
+/**
+ * Top bar: "Log in" when signed out (opens the form), or the user's email + My trips + Log out,
+ * with "Delete account" underneath (Apple requires apps with sign-up to offer it in the app).
+ */
 export function AccountBar(props: { session: Session | null; onShowTrips: () => void }) {
   const [formOpen, setFormOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  async function onDeleteAccount() {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteAccount();
+      // The login no longer exists on Supabase, so only clear it from this phone
+      await supabase?.auth.signOut({ scope: 'local' });
+      tell('Your account has been deleted', 'Your login and saved trips are gone.');
+    } catch (e) {
+      setDeleteError(e instanceof Error ? e.message : 'Could not delete your account');
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   if (!supabase) {
     return <Text style={styles.note}>Login isn’t set up yet (Supabase settings missing).</Text>;
   }
   if (props.session) {
     return (
-      <View style={styles.bar}>
-        <Text style={styles.email} numberOfLines={1}>
-          {props.session.user.email}
-        </Text>
-        <Pressable onPress={props.onShowTrips} accessibilityRole="button">
-          <Text style={styles.link}>My trips</Text>
-        </Pressable>
-        <Pressable onPress={() => supabase?.auth.signOut()} accessibilityRole="button">
-          <Text style={styles.link}>Log out</Text>
-        </Pressable>
+      <View style={styles.account}>
+        <View style={styles.bar}>
+          <Text style={styles.email} numberOfLines={1}>
+            {props.session.user.email}
+          </Text>
+          <Pressable onPress={props.onShowTrips} accessibilityRole="button">
+            <Text style={styles.link}>My trips</Text>
+          </Pressable>
+          <Pressable onPress={() => supabase?.auth.signOut()} accessibilityRole="button">
+            <Text style={styles.link}>Log out</Text>
+          </Pressable>
+        </View>
+        {deleting ? (
+          <View style={styles.deleteRow}>
+            <ActivityIndicator size="small" />
+            <Text style={styles.note}>Deleting your account…</Text>
+          </View>
+        ) : (
+          <Pressable
+            onPress={() => confirmDelete(onDeleteAccount)}
+            accessibilityRole="button"
+            style={styles.deleteRow}
+          >
+            <Text style={styles.deleteLink}>Delete account</Text>
+          </Pressable>
+        )}
+        {deleteError ? <Text style={styles.deleteError}>{deleteError}</Text> : null}
       </View>
     );
   }
@@ -95,7 +155,11 @@ function LoginForm(props: { onClose: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  bar: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 12 },
+  account: { marginBottom: 12 },
+  bar: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  deleteRow: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start' },
+  deleteLink: { color: '#B00020', fontSize: 13 },
+  deleteError: { color: '#B00020', fontSize: 13, marginTop: 4 },
   email: { flex: 1, color: '#555', fontSize: 13 },
   link: { color: '#0B5CAD', fontWeight: '600', fontSize: 14, marginBottom: 12 },
   note: { color: '#888', fontSize: 12, marginBottom: 12 },

@@ -64,3 +64,5 @@ export const saveTrip = (plan: TripPlan) =>
 export const listTrips = () => authed<SavedTripSummary[]>('/trips');
 export const getTrip = (id: number) => authed<SavedTripFull>(`/trips/${id}`);
 export const deleteTrip = (id: number) => authed<void>(`/trips/${id}`, { method: 'DELETE' });
+/** Deletes the account for good: saved trips and the login. */
+export const deleteAccount = () => authed<void>('/account', { method: 'DELETE' });
