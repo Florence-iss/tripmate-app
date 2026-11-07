@@ -12,6 +12,20 @@
         "EXPO_PUBLIC_SUPABASE_URL": "https://cidrtmwlptpjmbyfpxkg.supabase.co",
         "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_NwnHn3wKPkwt_STucT3uoA_-vVArZSL"
       }
+    },
+    "production": {
+      "distribution": "store",
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://tripmate-backend-bz0t.onrender.com",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://cidrtmwlptpjmbyfpxkg.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_NwnHn3wKPkwt_STucT3uoA_-vVArZSL"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {}
     }
   }
 }
