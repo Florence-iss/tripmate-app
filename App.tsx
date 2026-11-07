@@ -19,6 +19,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { createPlan, saveTrip } from './src/api';
 import { AccountBar } from './src/components/Account';
+import { PlanningStatus } from './src/components/PlanningStatus';
 import { SavedTrips } from './src/components/SavedTrips';
 import { supabase } from './src/supabase';
 import type { Money, TransportMode, TravelStyle, TripPlan } from './src/types';
@@ -201,8 +202,16 @@ export default function App() {
             onPress={onPlanTrip}
             disabled={loading}
           >
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Plan my trip</Text>}
+            {loading ? (
+              <View style={styles.buttonBusy}>
+                <ActivityIndicator color="#fff" />
+                <Text style={styles.buttonText}>Planning…</Text>
+              </View>
+            ) : (
+              <Text style={styles.buttonText}>Plan my trip</Text>
+            )}
           </Pressable>
+          {loading ? <PlanningStatus aiPlan={session !== null} /> : null}
 
           <View onLayout={(e) => { resultsY.current = e.nativeEvent.layout.y; }}>
             {error && <Text style={styles.error}>{error}</Text>}
@@ -496,6 +505,7 @@ const styles = StyleSheet.create({
   },
   buttonPressed: { opacity: 0.7 },
   buttonText: { color: '#fff', fontSize: 17, fontWeight: '600' },
+  buttonBusy: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   error: { color: '#B00020', backgroundColor: '#FDECEE', padding: 12, borderRadius: 10, marginBottom: 16 },
   heading: { fontSize: 20, fontWeight: '700', marginBottom: 12 },
   card: { backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 12, gap: 4 },
