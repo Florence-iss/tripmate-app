@@ -9,7 +9,7 @@ export function AccountBar(props: { session: Session | null; onShowTrips: () => 
   const [formOpen, setFormOpen] = useState(false);
 
   if (!supabase) {
-    return <Text style={styles.note}>Login isn't set up yet (Supabase settings missing).</Text>;
+    return <Text style={styles.note}>Login isn’t set up yet (Supabase settings missing).</Text>;
   }
   if (props.session) {
     return (

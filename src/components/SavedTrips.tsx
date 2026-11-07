@@ -9,18 +9,29 @@ export function SavedTrips(props: { onOpen: (plan: TripPlan) => void; onClose: (
   const [trips, setTrips] = useState<SavedTripSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const showLoadError = (e: unknown) => setError(e instanceof Error ? e.message : 'Could not load your trips');
+
+  // Initial load. State is only set once the request settles (never synchronously in the effect),
+  // and ignored if the list was closed before then.
+  useEffect(() => {
+    let cancelled = false;
+    listTrips().then(
+      (list) => !cancelled && setTrips(list),
+      (e) => !cancelled && showLoadError(e),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const load = useCallback(async () => {
     setError(null);
     try {
       setTrips(await listTrips());
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not load your trips');
+      showLoadError(e);
     }
   }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   async function open(id: number) {
     try {
@@ -49,7 +60,7 @@ export function SavedTrips(props: { onOpen: (plan: TripPlan) => void; onClose: (
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {trips === null && !error ? <ActivityIndicator /> : null}
-      {trips?.length === 0 ? <Text style={styles.muted}>No saved trips yet. Plan one and tap "Save this trip".</Text> : null}
+      {trips?.length === 0 ? <Text style={styles.muted}>No saved trips yet. Plan one and tap “Save this trip”.</Text> : null}
       {trips?.map((trip) => (
         <View key={trip.id} style={styles.trip}>
           <Pressable style={styles.tripText} onPress={() => open(trip.id)} accessibilityRole="button">
