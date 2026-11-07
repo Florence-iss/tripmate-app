@@ -348,7 +348,7 @@ function PlanView({ plan }: { plan: TripPlan }) {
           <Text style={styles.stayLine}>🏨 Staying at {plan.stay.name} · daily trips to and from it are included</Text>
         ) : (
           <Text style={styles.stayWarning}>
-            Couldn't find "{plan.stay.requested}", so trips to and from it aren't counted. Try the full hotel name.
+            Couldn’t find “{plan.stay.requested}”, so trips to and from it aren’t counted. Try the full hotel name.
           </Text>
         )
       ) : null}
