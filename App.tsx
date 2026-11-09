@@ -21,6 +21,7 @@ import { createPlan, saveTrip } from './src/api';
 import { AccountBar } from './src/components/Account';
 import { PlanningStatus } from './src/components/PlanningStatus';
 import { SavedTrips } from './src/components/SavedTrips';
+import { WebDateInput } from './src/components/WebDateInput';
 import { supabase } from './src/supabase';
 import type { Money, TransportMode, TravelStyle, TripPlan } from './src/types';
 
@@ -274,6 +275,19 @@ function DateField(props: {
     if (selected) props.onChange(toYMD(selected));
   }
 
+  if (Platform.OS === 'web') {
+    return (
+      <View style={styles.field}>
+        <Text style={styles.label}>{props.label}</Text>
+        <WebDateInput
+          value={props.value}
+          min={props.minimumDate ? toYMD(props.minimumDate) : undefined}
+          onChange={props.onChange}
+        />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{props.label}</Text>
@@ -456,7 +470,8 @@ function PlanView({ plan }: { plan: TripPlan }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F6F7F9' },
-  content: { padding: 16, paddingBottom: 48 },
+  // maxWidth keeps the page phone-shaped on wide computer screens (web); phones are narrower, so no change there
+  content: { padding: 16, paddingBottom: 48, width: '100%', maxWidth: 640, alignSelf: 'center' },
   title: { fontSize: 32, fontWeight: '700', color: '#0B3B5B' },
   subtitle: { fontSize: 16, color: '#555', marginBottom: 16 },
   row: { flexDirection: 'row', gap: 12 },

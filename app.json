@@ -24,6 +24,7 @@
       "package": "com.florenceiss.tripmate"
     },
     "web": {
+      "output": "single",
       "favicon": "./assets/favicon.png"
     },
     "extra": {
