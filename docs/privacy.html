@@ -20,7 +20,7 @@
 <body>
 <main>
 <h1>TripMate Privacy Policy</h1>
-<p class="updated">Last updated: 7 November 2026</p>
+<p class="updated">Last updated: 9 November 2026</p>
 
 <p>TripMate turns a city and dates into a day-by-day trip plan. This page explains what information the app
 uses, why, who else sees it, and how you can delete it. In short: we only use what's needed to make and save
@@ -51,14 +51,18 @@ or analytics tools.</p>
   <li><strong>Supabase</strong> – login and our database (your email, saved trips and AI plan records).</li>
   <li><strong>Render</strong> – hosts the TripMate server that your app talks to. Its logs can briefly include
       the city or hotel name you searched for.</li>
+  <li><strong>Resend</strong> – sends TripMate’s account emails (confirming your email, resetting your password).
+      It receives your email address.</li>
+  <li><strong>Expo</strong> – hosts the TripMate website.</li>
   <li><strong>GitHub</strong> – hosts this page.</li>
   <li><strong>Anthropic (Claude)</strong> – writes AI trip plans. It receives your trip request (city, dates,
       travellers, style, transport and hotel or area), but not your email or account.</li>
   <li><strong>Google Places</strong> – checks that places are real and open, and finds your hotel. It receives
       place names, the city and your hotel or area. Place photos in the app are loaded directly from Google,
       so Google can see your IP address.</li>
-  <li><strong>MET Norway</strong> and <strong>Open-Meteo</strong> – weather forecasts and finding a city on the
-      map. They receive the city (as its name or approximate map position), never your own location.</li>
+  <li><strong>MET Norway</strong> and <strong>Open-Meteo</strong> – weather forecasts, finding a city on the
+      map, and suggesting city names as you type. They receive the city (as its name, the letters typed so far,
+      or its approximate map position), sent by our server, never your own location.</li>
   <li><strong>open.er-api.com</strong> – exchange rates. It receives no information about you.</li>
   <li><strong>YouTube</strong> – only if you tap “Watch on YouTube”, which opens a YouTube search for that place.</li>
 </ul>

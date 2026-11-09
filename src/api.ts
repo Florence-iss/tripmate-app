@@ -36,6 +36,18 @@ export async function createPlan(request: PlanRequest): Promise<TripPlan> {
   return (await response.json()) as TripPlan;
 }
 
+export type CitySuggestion = { city: string; country: string; region: string | null };
+
+/** Cities that start with what the user has typed, biggest first. Empty if the server can't be reached. */
+export async function suggestCities(text: string, signal?: AbortSignal): Promise<CitySuggestion[]> {
+  try {
+    const response = await fetch(`${API_URL}/cities?q=${encodeURIComponent(text)}`, { signal });
+    return response.ok ? ((await response.json()) as CitySuggestion[]) : [];
+  } catch {
+    return []; // offline, server asleep, or a newer search replaced this one
+  }
+}
+
 /** Calls the backend with the user's Supabase login ticket. */
 async function authed<T>(path: string, init: RequestInit = {}): Promise<T> {
   const session = supabase ? (await supabase.auth.getSession()).data.session : null;

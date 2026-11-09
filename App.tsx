@@ -19,10 +19,11 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { createPlan, saveTrip } from './src/api';
 import { AccountBar } from './src/components/Account';
+import { CityField } from './src/components/CityField';
 import { PlanningStatus } from './src/components/PlanningStatus';
 import { SavedTrips } from './src/components/SavedTrips';
 import { WebDateInput } from './src/components/WebDateInput';
-import { supabase } from './src/supabase';
+import { clearAddress, supabase } from './src/supabase';
 import type { Money, TransportMode, TravelStyle, TripPlan } from './src/types';
 
 const STYLES: { value: TravelStyle; label: string }[] = [
@@ -74,7 +75,10 @@ export default function App() {
 
   useEffect(() => {
     if (!supabase) return;
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      clearAddress(); // an email link's login details are used by now; don't leave them in the address bar
+    });
     const { data } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
       if (!newSession) setShowTrips(false);
@@ -146,7 +150,14 @@ export default function App() {
             />
           ) : null}
 
-          <Field label="City" value={city} onChangeText={setCity} />
+          <CityField
+            city={city}
+            onChangeCity={setCity}
+            onPick={(pick) => {
+              setCity(pick.city);
+              setCountry(pick.country);
+            }}
+          />
           <Field label="Country" value={country} onChangeText={setCountry} />
           <View style={styles.row}>
             <View style={styles.flex}>
